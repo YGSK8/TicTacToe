@@ -35,7 +35,7 @@ public class Board
     public void UpdateBoard(Position position, BoxVal val)
     {
         _board[position.row,position.col].Value = val;
-        BoardUpdated.Invoke();   
+        BoardUpdated?.Invoke();   
     }
     public List<List<Position>> MatchingThree()
     {
@@ -59,10 +59,6 @@ public class Board
         Console.WriteLine(" ---+---+---");
         foreach(List<Position> row in _rows)
         {
-            // foreach(Position pos in row)
-            // {
-            //     Console.Write("| "+(_board[pos.row,pos.col].Value != BoxVal.none?_board[pos.row,pos.col].Value:_board[pos.row,pos.col].Reference)+" ");
-            // }
             foreach(Position pos in row)
             {
                 if(_board[pos.row,pos.col].Value==BoxVal.none) Console.Write("| "+_board[pos.row,pos.col].Reference+" ");

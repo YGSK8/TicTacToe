@@ -12,7 +12,7 @@ public class Utils
         int selection = -1;
         while (!list.Contains(selection))
         {
-            selection = Convert.ToInt32(Console.ReadLine());
+            int.TryParse(Console.ReadLine(), out selection);
             if(!list.Contains(selection))Console.WriteLine("Invalid choice");
         }
         return selection;
@@ -36,10 +36,5 @@ public class Utils
     public static string TextGen(string name)
     {
         return name+"'s turn, your options are: ";
-    }
-    
-    public static void OnGameEnded()
-    {
-        Environment.Exit(0);
     }
 }

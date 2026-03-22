@@ -9,13 +9,13 @@ while (!game.GameOver())
 {
     foreach(Player player in playerlist)
     {
-        Console.WriteLine(Utils.TextGen(player.name));
+        Console.WriteLine(Utils.TextGen(player.Name));
         int selection = Utils.Validator(board.AvailableSquares());
         game.PlayerMove(player,selection);
         if (game.GameOver())
         {
             if(game.Draw())Console.WriteLine("It is a draw");
-            else Console.WriteLine(game.Winner().name + " won in "+player.MovesCount()+" moves");
+            else Console.WriteLine(game.Winner().Name + " won in "+player.MovesCount()+" moves");
             break;
         }
     }
