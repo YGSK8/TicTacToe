@@ -54,32 +54,7 @@ public class Board
         }
         return matches;
     }
-    // public void DisplayGrid()
-    // {
-    //     Console.WriteLine(" ---+---+---");
-    //     foreach(List<Position> row in _rows)
-    //     {
-    //         foreach(Position pos in row)
-    //         {
-    //             if(_board[pos.row,pos.col].Value==BoxVal.none) Console.Write("| "+_board[pos.row,pos.col].Reference+" ");
-    //             else if(_board[pos.row,pos.col].Value==BoxVal.O){
-    //                 Console.Write("| ");
-    //                 Console.ForegroundColor=ConsoleColor.DarkRed;
-    //                 Console.Write(_board[pos.row,pos.col].Value+" ");
-    //                 Console.ResetColor();
-    //                 }
-    //             else if(_board[pos.row,pos.col].Value==BoxVal.X){
-    //                 Console.Write("| ");
-    //                 Console.ForegroundColor=ConsoleColor.Yellow;
-    //                 Console.Write(_board[pos.row,pos.col].Value+" ");
-    //                 Console.ResetColor();
-    //                 }
-    //         }
-    //         Console.Write("|\n");
-    //         // Console.Write("--");
-    //     Console.WriteLine(" ---+---+---");
-    //     }
-    // }
+
     public List<int> AvailableSquares()
     {
         List<int> references=new List<int>{};

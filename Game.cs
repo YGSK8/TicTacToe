@@ -17,7 +17,6 @@ public class Game
         Player2 = player2;
         Board = board;
         _currentPlayer = player1.Name;
-        // board.BoardUpdated+=board.DisplayGrid;
         board.BoardUpdated+=CheckStatus;
     }
     public void CheckStatus()
@@ -40,7 +39,7 @@ public class Game
     }
     public GameState GetGameState()
     {
-        return new GameState(Board.BoardState(),_currentPlayer,_gameover,_winner?.Name == null?"":_winner.Name);
+        return new GameState(Board.BoardState(),_currentPlayer,_gameover,_winner?.Name);
     }
 
 }

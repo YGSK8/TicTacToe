@@ -5,7 +5,7 @@ public class GameState
     public bool IsOver{get;}
     public string? Winner{get;}
 
-    public GameState(string [] board, string currentPlayer,bool isOver,string winner)
+    public GameState(string [] board, string currentPlayer,bool isOver,string? winner)
     {
         Board = board;
         CurrentPlayer = currentPlayer;
