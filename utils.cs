@@ -1,23 +1,5 @@
-using System.Diagnostics;
-
 public class Utils
 {
-    public static int Validator(List<int> list)
-    {
-        foreach(int number in list)
-        {
-            Console.Write(number + " ");
-        }
-        Console.WriteLine(" ");
-        int selection = -1;
-        while (!list.Contains(selection))
-        {
-            int.TryParse(Console.ReadLine(), out selection);
-            if(!list.Contains(selection))Console.WriteLine("Invalid choice");
-        }
-        return selection;
-    }
-
     public static Position IntToPosition(int number)
     {
         return number switch
@@ -32,9 +14,5 @@ public class Utils
             7=>new Position(2,1), 
             8=>new Position(2,2), 
         };
-    }
-    public static string TextGen(string name)
-    {
-        return name+"'s turn, your options are: ";
     }
 }

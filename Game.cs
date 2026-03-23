@@ -2,6 +2,7 @@ public class Game
 {
     public Player Player1{get;}
     public Player Player2{get;}
+    private string _currentPlayer;
     private int _moves;
     private bool _draw;
     private bool _gameover;
@@ -15,7 +16,8 @@ public class Game
         Player1 = player1;
         Player2 = player2;
         Board = board;
-        board.BoardUpdated+=board.DisplayGrid;
+        _currentPlayer = player1.Name;
+        // board.BoardUpdated+=board.DisplayGrid;
         board.BoardUpdated+=CheckStatus;
     }
     public void CheckStatus()
@@ -34,6 +36,11 @@ public class Game
     {
         _moves++;
         Board.UpdateBoard(player.PlayerMove(playerchoice,Utils.IntToPosition),player.assignedBoxval);
+        _currentPlayer = _currentPlayer==Player1.Name?Player2.Name:Player1.Name;
+    }
+    public GameState GetGameState()
+    {
+        return new GameState(Board.BoardState(),_currentPlayer,_gameover,_winner?.Name == null?"":_winner.Name);
     }
 
 }
