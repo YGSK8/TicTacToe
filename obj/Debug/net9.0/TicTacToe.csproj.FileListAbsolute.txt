@@ -1,6 +1,4 @@
-/Users/yanishgooradoo/TicTacToe/TicTacToe/bin/Debug/net9.0/TicTacToe
 /Users/yanishgooradoo/TicTacToe/TicTacToe/bin/Debug/net9.0/TicTacToe.deps.json
-/Users/yanishgooradoo/TicTacToe/TicTacToe/bin/Debug/net9.0/TicTacToe.runtimeconfig.json
 /Users/yanishgooradoo/TicTacToe/TicTacToe/bin/Debug/net9.0/TicTacToe.dll
 /Users/yanishgooradoo/TicTacToe/TicTacToe/bin/Debug/net9.0/TicTacToe.pdb
 /Users/yanishgooradoo/TicTacToe/TicTacToe/obj/Debug/net9.0/TicTacToe.GeneratedMSBuildEditorConfig.editorconfig
@@ -10,6 +8,5 @@
 /Users/yanishgooradoo/TicTacToe/TicTacToe/obj/Debug/net9.0/TicTacToe.dll
 /Users/yanishgooradoo/TicTacToe/TicTacToe/obj/Debug/net9.0/refint/TicTacToe.dll
 /Users/yanishgooradoo/TicTacToe/TicTacToe/obj/Debug/net9.0/TicTacToe.pdb
-/Users/yanishgooradoo/TicTacToe/TicTacToe/obj/Debug/net9.0/TicTacToe.genruntimeconfig.cache
 /Users/yanishgooradoo/TicTacToe/TicTacToe/obj/Debug/net9.0/ref/TicTacToe.dll
 /Users/yanishgooradoo/TicTacToe/TicTacToe/obj/Debug/net9.0/TicTacToe.sourcelink.json

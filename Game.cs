@@ -41,5 +41,9 @@ public class Game
     {
         return new GameState(Board.BoardState(),_currentPlayer,_gameover,_winner?.Name);
     }
-
+    public void MakeMove(int playerchoice)
+    {
+       Player player = Player1.Name ==_currentPlayer?Player1:Player2;
+       PlayerMove(player,playerchoice);
+    }
 }
