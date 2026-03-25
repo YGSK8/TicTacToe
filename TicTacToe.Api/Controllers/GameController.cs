@@ -31,6 +31,7 @@ public class GameController:ControllerBase{
     {
         if(!_games.ContainsKey(request.GameId))return NotFound();
         Game game = _games[request.GameId];
+        if(game.GameOver()||!game.AvailableSquares().Contains(request.PlayerChoice))return BadRequest();
         game.MakeMove(request.PlayerChoice);
         return Ok(game.GetGameState());
     } 
