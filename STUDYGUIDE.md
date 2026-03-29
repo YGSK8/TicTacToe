@@ -97,6 +97,39 @@ When ASP.NET Core creates your controller to handle a request, it sees the const
 
 For your game store, **Singleton** is correct. One dictionary, shared across all requests, alive as long as the server is running.
 
+**Seeing the difference in practice — the IdGenerator test:**
+
+Create a service that generates a short random ID on construction:
+
+```csharp
+public class IdGenerator
+{
+    public string Id { get; } = Guid.NewGuid().ToString()[..4];
+}
+```
+
+Inject it twice into the same controller:
+
+```csharp
+public TestController(IdGenerator first, IdGenerator second)
+{
+    _first = first;
+    _second = second;
+}
+```
+
+Return both IDs from an endpoint and observe:
+
+| Registration | FirstId | SecondId | After refresh |
+|---|---|---|---|
+| `AddTransient` | `A1B2` | `C3D4` | Different again |
+| `AddScoped` | `E5F6` | `E5F6` | New matching pair |
+| `AddSingleton` | `Z9X0` | `Z9X0` | Same forever |
+
+- **Transient** — new instance every time the constructor asks, even within the same request. Two different IDs.
+- **Scoped** — one instance for the entire HTTP request. Same ID for both. New pair on next request.
+- **Singleton** — one instance for the entire app lifetime. Same ID no matter how many requests.
+
 ---
 
 ## 4. Controllers and Routing

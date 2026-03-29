@@ -8,7 +8,7 @@ public class Board
     public List<Position>[] GetDiagonals()=> _diagonals;
     public List<Position>[] GetRows()=> _rows;
     public List<Position>[] GetCols()=> _cols;
-    public event Action BoardUpdated;
+    public event Action? BoardUpdated;
     public Board()
     {
         int reference = 0;
@@ -64,7 +64,6 @@ public class Board
         }
         return references;
     }
-
     public string [] BoardState()
     {
         string [] board = new string[9];

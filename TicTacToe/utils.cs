@@ -12,7 +12,8 @@ public class Utils
             5=>new Position(1,2), 
             6=>new Position(2,0), 
             7=>new Position(2,1), 
-            8=>new Position(2,2), 
+            8=>new Position(2,2),
+            _ => throw new ArgumentOutOfRangeException(nameof(number))
         };
     }
 }
