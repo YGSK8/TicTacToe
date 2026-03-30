@@ -307,3 +307,203 @@ ASP.NET Core serializes it to JSON automatically:
 ```
 
 Use anonymous objects for one-off response shapes. If the same shape appears in multiple places, create a proper class instead.
+
+---
+
+## 8. Making HTTP Requests with curl
+
+curl is the command-line tool for sending HTTP requests. Always run it in a **separate terminal** from `dotnet run`.
+
+**GET request:**
+```
+curl http://localhost:5077/game/{id}
+```
+
+**POST request with no body:**
+```
+curl -X POST http://localhost:5077/game/new
+```
+
+**POST request with JSON body:**
+```
+curl -X POST http://localhost:5077/game/move -H "Content-Type: application/json" -d '{"gameId":"your-guid-here","playerChoice":0}'
+```
+
+**Flags:**
+| Flag | Meaning |
+|---|---|
+| `-X POST` | Set the HTTP method |
+| `-H "Content-Type: application/json"` | Set a request header |
+| `-d '...'` | Set the request body |
+| `-v` | Verbose — shows status code, headers, and body |
+
+**Rule:** Always put the entire curl command on one line. Backslash line-continuation (`\`) can cause issues in some terminals.
+
+---
+
+## 9. Entity Framework Core
+
+### What It Is
+
+EF Core is an ORM (Object-Relational Mapper). It translates C# objects into database rows and back. You write C# — it handles the SQL.
+
+### Chain of Command
+
+**Writing data (Add / Update / Remove):**
+```
+Controller
+    ↓
+DbContext.GameRecords.Add(record)    ← you stage the change
+    ↓
+Change Tracker                       ← EF Core watches the object for changes
+    ↓
+DbContext.SaveChanges()              ← you trigger the write
+    ↓
+SQL Generator                        ← EF Core builds INSERT / UPDATE / DELETE
+    ↓
+Database Provider (SQLite)           ← executes the SQL
+    ↓
+tictactoe.db                         ← row written to disk
+```
+
+**Reading data (Find / SingleOrDefault / Where):**
+```
+Controller
+    ↓
+DbContext.GameRecords.SingleOrDefault(x => x.Id == id)   ← you write LINQ
+    ↓
+SQL Generator                        ← EF Core translates LINQ to SELECT SQL
+    ↓
+Database Provider (SQLite)           ← executes the SQL
+    ↓
+tictactoe.db                         ← row read from disk
+    ↓
+Entity Materializer                  ← EF Core maps columns back to C# object
+    ↓
+Change Tracker                       ← EF Core starts watching the returned object
+    ↓
+Controller receives C# object
+```
+
+**Key rule:** You never write SQL. You write C# — EF Core handles the translation at every step.
+
+```
+Your Code (C# objects)
+        ↓
+   EF Core (DbContext)       ← the bridge
+        ↓
+   SQLite / PostgreSQL / SQL Server   ← swappable
+```
+
+### Architecture Diagram
+
+```
+TicTacToe.Api/
+├── Program.cs              ← registers DbContext with DI
+├── GameRecord.cs           ← Model: one class = one database table
+├── GameDbContext.cs        ← DbContext: bridge between C# and database
+├── Migrations/             ← auto-generated SQL schema files
+│   ├── 20260330_InitialCreate.cs      ← Up() creates table, Down() drops it
+│   ├── 20260330_InitialCreate.Designer.cs
+│   └── GameDbContextModelSnapshot.cs ← current schema snapshot
+└── tictactoe.db            ← the actual SQLite database file
+```
+
+### The Three EF Core Components
+
+| Component | What it is | You write it? |
+|---|---|---|
+| `Model` | C# class that maps to a table | Yes |
+| `DbContext` | Bridge between code and database | Yes |
+| `Migration` | SQL to create/update the schema | EF Core generates it |
+
+---
+
+### Step-by-Step: Adding EF Core to a Project
+
+**Step 1 — Install NuGet packages** (run from the API project folder):
+```
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite --version 9.0.0
+dotnet add package Microsoft.EntityFrameworkCore.Tools --version 9.0.0
+```
+
+**Step 2 — Install the global CLI tool** (once per machine):
+```
+dotnet tool install --global dotnet-ef --version 9.0.0
+```
+If you get a PATH warning, add the tools folder:
+```
+export PATH="$PATH:/Users/yanishgooradoo/.dotnet/tools"
+cat << \EOF >> ~/.zprofile
+export PATH="$PATH:/Users/yanishgooradoo/.dotnet/tools"
+EOF
+```
+
+**Step 3 — Create the Model** (e.g. `GameRecord.cs`):
+- Standalone class — do NOT inherit from DTOs or other classes
+- Property named `Id` or `{ClassName}Id` → EF Core auto-detects as primary key
+- All properties need `{get; set;}` — EF Core uses setters when reading from the database
+- Add a **parameterless constructor** — EF Core uses it to create instances when reading rows
+- Non-nullable reference types (`string`) will cause CS8618 warnings from the parameterless constructor — this is expected
+
+**Step 4 — Create the DbContext** (e.g. `GameDbContext.cs`):
+```csharp
+using Microsoft.EntityFrameworkCore;
+
+public class GameDbContext : DbContext
+{
+    public DbSet<GameRecord> GameRecords { get; set; }
+    public GameDbContext(DbContextOptions<GameDbContext> options) : base(options) { }
+}
+```
+- `DbSet<T>` → represents a table. Name it as the plural of your model (`GameRecords`).
+- Constructor passes options to the base `DbContext` class.
+
+**Step 5 — Register in `Program.cs`:**
+```csharp
+builder.Services.AddDbContext<GameDbContext>(options =>
+    options.UseSqlite("Data Source=tictactoe.db"));
+```
+- Place this before `builder.Build()`
+- `"Data Source=tictactoe.db"` is the connection string — file is created relative to where the app runs
+
+**Step 6 — Create and apply the migration:**
+```
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+```
+- `migrations add` generates the migration files in `Migrations/`
+- `database update` runs the SQL and creates the `.db` file
+
+---
+
+### Common DbContext Methods
+
+| Method | What it does | When to use |
+|---|---|---|
+| `_context.GameRecords.Add(record)` | Stages a new record for INSERT | Creating a new entity |
+| `_context.GameRecords.Update(record)` | Marks all properties as modified | Forcing an UPDATE |
+| `_context.GameRecords.Remove(record)` | Stages a DELETE | Deleting an entity |
+| `_context.GameRecords.Find(id)` | Fetches by primary key | Fast lookup by ID |
+| `_context.GameRecords.SingleOrDefault(x => x.Id == id)` | LINQ query — returns one or null | Lookup with a condition |
+| `_context.GameRecords.Where(x => x.IsOver == true).ToList()` | LINQ query — returns many | Filtering records |
+| `_context.SaveChanges()` | Writes all staged changes to the database | Always call after Add/Update/Remove |
+
+**Important:** `Add()`, `Update()`, and `Remove()` only stage changes in memory. Nothing hits the database until you call `SaveChanges()`.
+
+**Change tracking:** When you fetch a record via `SingleOrDefault` or `Find`, EF Core tracks it. If you modify its properties and call `SaveChanges()`, EF Core detects the changes and generates an UPDATE automatically. If change tracking isn't working, call `_context.GameRecords.Update(record)` to force it.
+
+---
+
+### SQLite CLI Commands
+
+```
+sqlite3 tictactoe.db                          # open the database
+sqlite3 tictactoe.db "SELECT * FROM Table;"   # run a one-off query
+sqlite3 tictactoe.db "SELECT col1, col2 FROM Table WHERE Id = 'guid';"
+.tables                                       # list all tables (inside sqlite3 shell)
+.schema GameRecords                           # show table structure
+.exit                                         # exit sqlite3 shell
+```
+
+**Note:** The `.db` file is created relative to where `dotnet run` is called. Inconsistent working directories = multiple `.db` files. Use `find . -name "*.db"` to locate them all.
