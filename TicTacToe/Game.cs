@@ -7,6 +7,7 @@ public class Game
     private bool _draw;
     private bool _gameover;
     private Player? _winner;
+    public Player CurrentPlayer()=>_currentPlayer;
     public bool Draw()=>_draw;
     public Player? Winner()=>_winner;
     public bool GameOver()=>_gameover;
@@ -44,6 +45,10 @@ public class Game
     public GameState GetGameState()
     {
         return new GameState(Board.BoardState(),_currentPlayer.assignedBoxval.ToString(),_gameover,_winner?.Name);
+    }
+    public string[] BoardState()
+    {
+        return Board.BoardState();
     }
     public void MakeMove(int playerchoice)
     {
