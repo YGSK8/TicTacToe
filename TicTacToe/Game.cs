@@ -20,6 +20,14 @@ public class Game
         _currentPlayer = player1;
         board.BoardUpdated+=CheckStatus;
     }
+    public Game(Player player1, Player player2, Board board, Player currentplayer, bool draw, bool gameOver, Player? winner) : this(player1, player2, board)
+    {
+        _currentPlayer = currentplayer;
+        _draw = draw;
+        _gameover = gameOver;
+        _winner = winner;
+        _moves = 9-AvailableSquares().Count();
+    }
     public void CheckStatus()
     {
         List<List<Position>> list = Board.MatchingThree();

@@ -16,4 +16,12 @@ public class Utils
             _ => throw new ArgumentOutOfRangeException(nameof(number))
         };
     }
+    public static BoxVal StringToBoxVal(string value)
+    {
+        if(Enum.TryParse(value,out BoxVal result))
+        {
+            return result;
+        }
+        else throw new InvalidDataException();
+    }
 }

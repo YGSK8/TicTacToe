@@ -259,15 +259,46 @@ Defines the base URL path for all endpoints in the controller. Every method's `[
 
 ---
 
-### `[HttpGet]` / `[HttpPost]`
+### HTTP Methods — Full Reference
+
+| Method | Attribute | Purpose | curl flag |
+|---|---|---|---|
+| GET | `[HttpGet]` | Read/retrieve a resource | *(default)* |
+| POST | `[HttpPost]` | Create a new resource | `-X POST` |
+| PUT | `[HttpPut]` | Replace an existing resource (full update) | `-X PUT` |
+| PATCH | `[HttpPatch]` | Partially update a resource | `-X PATCH` |
+| DELETE | `[HttpDelete]` | Delete a resource | `-X DELETE` |
+
+**When to use each:**
+
+```
+GET    /games/{id}     → read a game
+POST   /games          → create a new game
+PUT    /games/{id}     → replace the entire game record
+PATCH  /games/{id}     → update one or two fields (e.g. just the board state)
+DELETE /games/{id}     → delete a game
+```
+
+**PUT vs PATCH:**
+- `PUT` sends the full object — all fields replaced
+- `PATCH` sends only the fields that changed — more efficient for partial updates
+- For your TicTacToe `POST /game/move`, some would argue `PATCH /game/{id}` is more correct since you're partially updating game state. Both are valid in practice.
+
+**In your controller:**
 
 Attributes applied to individual methods. They do two things:
-1. Specify which HTTP method (GET, POST, etc.) triggers this endpoint.
+1. Specify which HTTP method triggers this endpoint.
 2. Append a sub-path to the controller's base route.
 
 ```csharp
 [HttpGet("{id}")]
 public IActionResult GetGame(Guid id) { ... }
+
+[HttpPut("{id}")]
+public IActionResult ReplaceGame(Guid id, GameRequest request) { ... }
+
+[HttpDelete("{id}")]
+public IActionResult DeleteGame(Guid id) { ... }
 ```
 
 The `{id}` in the route is a **route parameter** — ASP.NET Core reads it from the URL and passes it directly to your method parameter. If the URL is `/game/abc-123`, then `id` receives that value automatically.
@@ -329,11 +360,26 @@ curl -X POST http://localhost:5077/game/new
 curl -X POST http://localhost:5077/game/move -H "Content-Type: application/json" -d '{"gameId":"your-guid-here","playerChoice":0}'
 ```
 
+**PUT request (full update):**
+```
+curl -X PUT http://localhost:5077/game/{id} -H "Content-Type: application/json" -d '{"field":"value"}'
+```
+
+**PATCH request (partial update):**
+```
+curl -X PATCH http://localhost:5077/game/{id} -H "Content-Type: application/json" -d '{"field":"value"}'
+```
+
+**DELETE request:**
+```
+curl -X DELETE http://localhost:5077/game/{id}
+```
+
 **Flags:**
 | Flag | Meaning |
 |---|---|
-| `-X POST` | Set the HTTP method |
-| `-H "Content-Type: application/json"` | Set a request header |
+| `-X POST` | Set the HTTP method (POST, PUT, PATCH, DELETE) |
+| `-H "Content-Type: application/json"` | Set a request header — required when sending a JSON body |
 | `-d '...'` | Set the request body |
 | `-v` | Verbose — shows status code, headers, and body |
 

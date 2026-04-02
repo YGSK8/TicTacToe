@@ -32,6 +32,19 @@ public class Board
             y--;
         }
     }
+    public Board(string[] board) : this()
+    {
+        int counter = 0;
+        foreach(Square square in _board)
+        {
+            if(Enum.TryParse(board[counter],out BoxVal result))
+            {
+                square.Value = result;
+                counter ++;
+            }
+            else throw new InvalidDataException();
+        }
+    }
     public void UpdateBoard(Position position, BoxVal val)
     {
         _board[position.row,position.col].Value = val;
