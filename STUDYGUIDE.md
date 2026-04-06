@@ -596,12 +596,46 @@ WITHOUT async: 100 threads = 100 max concurrent requests (each one blocked waiti
 WITH async:    100 threads = thousands of concurrent requests (threads free during I/O)
 ```
 
+### I/O vs Non-I/O Operations
+
+**I/O = Input/Output — anything that leaves the CPU to interact with something else.**
+
+```
+I/O operations (slow, milliseconds+)
+────────────────────────────────────
+Database query        → read/write to disk or network
+File read/write       → disk access
+HTTP request          → network call
+User input (keyboard) → waiting for external event
+
+Non-I/O operations (fast, nanoseconds)
+──────────────────────────────────────
+Math calculation      → pure CPU
+String manipulation   → pure CPU
+Array sorting         → pure CPU
+Dictionary lookup     → RAM access (very fast)
+Variable assignment   → RAM access
+```
+
+**Visual model:**
+```
+CPU and RAM = inside the computer, instant communication
+     ↓
+Non-I/O operations happen here (nanoseconds)
+
+Everything outside (disk, network, user) = I/O
+     ↓
+I/O operations wait for external response (milliseconds)
+```
+
+**Rule:** If it touches disk, network, or waits for external input → I/O → use async. If it's pure calculation or RAM access → non-I/O → no async.
+
 ### When to Use Async
 
 ```
 async = useful ONLY when waiting for something outside the CPU
 
-In-memory operation  → nanoseconds  → thread never needs to be released → NO async
+Non-I/O operation    → nanoseconds  → thread never needs to be released → NO async
 I/O operation        → milliseconds → thread should be released          → YES async
 ```
 
