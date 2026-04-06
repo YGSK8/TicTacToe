@@ -1,0 +1,35 @@
+  <!DOCTYPE html>
+  <html lang="en">                                                  
+    <head>                                                  
+      <meta charset="UTF-8">
+      <title>TicTacToe</title>
+        <style>
+      #board {
+          display: grid;
+          grid-template-columns: repeat(3, 60px);
+      }
+      .cell {
+          width: 60px;
+          height: 60px;
+      }
+  </style>
+
+    </head>
+    <body>
+        <h1>TicTacToe</h1>
+        <button id="new-game">New Game</button>
+        <p id="status">Press New Game</p>
+        <div id="board">
+            <button class="cell" data-index="0"></button>
+            <button class="cell" data-index="1"></button>
+            <button class="cell" data-index="2"></button>
+            <button class="cell" data-index="3"></button>
+            <button class="cell" data-index="4"></button>
+            <button class="cell" data-index="5"></button>
+            <button class="cell" data-index="6"></button>
+            <button class="cell" data-index="7"></button>
+            <button class="cell" data-index="8"></button>
+        </div>
+        <script type = "module" src="game.js"></script>
+    </body>
+  </html>

@@ -553,3 +553,321 @@ sqlite3 tictactoe.db "SELECT col1, col2 FROM Table WHERE Id = 'guid';"
 ```
 
 **Note:** The `.db` file is created relative to where `dotnet run` is called. Inconsistent working directories = multiple `.db` files. Use `find . -name "*.db"` to locate them all.
+
+---
+
+## 10. Async / Await
+
+### Threads vs CPU Cores
+
+```
+Cores    = cashiers (4 physical executors — fixed by hardware)
+Threads  = checkout lanes (100s of concurrent work units — managed by OS)
+Customers = the actual instructions waiting to be executed
+```
+
+The OS is the store manager — it decides which core serves which thread and for how long. Cores switch between threads extremely fast (context switching), giving the illusion that all threads run simultaneously.
+
+**Threads do NOT belong to an application.** Each app has its own thread pool, but the OS scheduler shares CPU time across all apps running on the machine.
+
+**Thread pool:** A fixed set of threads managed by .NET. Minimum = 1 per core. Maximum = hard cap (~32,767, never reached in practice). Adding threads is expensive — the pool reuses them instead of creating new ones.
+
+### Why Async Matters
+
+**Without async (synchronous):**
+```
+Request arrives → thread assigned → thread calls database → thread waits → thread idle
+                                                              ↑
+                                              doing nothing, blocking other requests
+```
+
+**With async:**
+```
+Request arrives → thread assigned → thread calls database → thread released to pool
+                                                              ↑
+                                              free to handle other requests
+Database responds → thread from pool picks up → continues → returns response
+```
+
+The thread count stays the same. What changes is how much work each thread gets done between waits.
+
+```
+WITHOUT async: 100 threads = 100 max concurrent requests (each one blocked waiting)
+WITH async:    100 threads = thousands of concurrent requests (threads free during I/O)
+```
+
+### When to Use Async
+
+```
+async = useful ONLY when waiting for something outside the CPU
+
+In-memory operation  → nanoseconds  → thread never needs to be released → NO async
+I/O operation        → milliseconds → thread should be released          → YES async
+```
+
+Examples in your controller:
+```csharp
+_games.Add(id, game)               // Dictionary write → RAM → NO async
+_context.GameRecords.Add(record)   // EF Core staging → RAM only → NO async
+await _context.SaveChangesAsync()  // SQL sent to SQLite on disk → YES async
+await _context.FindAsync(id)       // SQL SELECT from database → YES async
+```
+
+`_context.GameRecords.Add()` is commonly misunderstood — it stages the record in EF Core's change tracker in memory only. No database contact until `SaveChanges`.
+
+### Async Pattern in ASP.NET Core
+
+Three things change every time:
+
+```
+SYNCHRONOUS                          ASYNC
+────────────────────────────────────────────────────────
+public IActionResult NewGame()       public async Task<IActionResult> NewGame()
+{                                    {
+    _context.SaveChanges();              await _context.SaveChangesAsync();
+    return Ok(...);                      return Ok(...);
+}                                    }
+```
+
+1. Add `async` to the method signature
+2. Wrap the return type in `Task<>`
+3. Every I/O call becomes `await someMethodAsync()`
+
+The thread is released at the exact line where `await` appears. When the I/O completes, a thread from the pool picks up and continues from the next line.
+
+### EF Core Async Methods
+
+| Synchronous | Async |
+|---|---|
+| `SaveChanges()` | `SaveChangesAsync()` |
+| `Find(id)` | `FindAsync(id)` |
+| `SingleOrDefault(...)` | `SingleOrDefaultAsync(...)` |
+| `ToList()` | `ToListAsync()` |
+
+---
+
+## 11. Frontend — HTML, TypeScript, and the Browser
+
+### The Full Stack Picture
+
+```
+Browser
+  ↓ opens
+localhost:3000  (static file server — serves HTML, CSS, JS files as-is)
+  ↓ loads
+index.html → loads game.js (compiled from game.ts)
+  ↓ user clicks button
+game.js calls fetch("localhost:5077/game/new")
+  ↓
+localhost:5077  (backend server — Kestrel + ASP.NET Core)
+  ↓
+GameController.NewGame()
+  ↓
+SQLite database
+  ↓
+JSON response back to browser
+  ↓
+game.js updates the HTML
+```
+
+The browser coordinates between both servers. The two servers never talk to each other.
+
+### Web Server vs Backend Server vs Static File Server
+
+```
+Static file server   → serves HTML/CSS/JS files with no logic (localhost:3000)
+Web server           → anything that serves HTTP responses (both servers qualify)
+Backend server       → web server + application logic + database (localhost:5077)
+```
+
+Every backend server uses a web server underneath. Not every web server is a backend server.
+
+### Kestrel and ASP.NET Core — Abstraction Layers
+
+"Sits on top" refers to abstraction level, not request order.
+
+```
+Request flow (who sees it first):     Abstraction hierarchy:
+
+Network         ← first               Your Code (GameController)  ← highest abstraction
+Kestrel         ← second              ASP.NET Core (routing, DI, JSON)
+ASP.NET Core    ← third               Kestrel (HTTP, TCP, bytes)
+Your Code       ← last                Network                      ← lowest level
+```
+
+- **Kestrel** — handles raw bytes, TCP connections, HTTP protocol. Converts network data into `HttpContext`. No concept of controllers or routing.
+- **ASP.NET Core** — sits above Kestrel. Takes `HttpContext` and applies routing, middleware, dependency injection, JSON serialization.
+- **Your controllers** — sit above ASP.NET Core. Only deal with game logic. No knowledge of HTTP.
+
+### Two Terminals Required
+
+```
+Terminal 1: dotnet run          → API on localhost:5077
+Terminal 2: npx http-server .   → Frontend on localhost:3000
+```
+
+The browser opens localhost:3000 and calls the API at localhost:5077.
+
+### HTML Reference
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>Page Title</title>       ← shown on browser tab
+    <style> ... </style>            ← CSS goes here
+  </head>
+  <body>
+    <h1>Heading</h1>                ← largest heading
+    <p id="status">Text</p>        ← paragraph (semantic text content)
+    <button id="btn">Click</button> ← clickable button
+    <div id="board">                ← generic container (no semantic meaning)
+      <button class="cell" data-index="0"></button>
+    </div>
+    <script type="module" src="game.js"></script>  ← load JS last, inside body
+  </body>
+</html>
+```
+
+**`<p>` vs `<div>`:**
+- `<p>` = paragraph — use for text content. Semantic meaning.
+- `<div>` = generic box — use for grouping elements. No semantic meaning.
+
+**Attributes:**
+- `id` — unique identifier, used by TypeScript to find the element (`getElementById`)
+- `class` — shared identifier, used to style or select multiple elements
+- `data-index` — custom data attribute, readable by TypeScript via `getAttribute("data-index")`
+
+### CSS Grid (3×3 Board)
+
+```css
+#board {
+    display: grid;
+    grid-template-columns: repeat(3, 60px);  /* 3 columns, each 60px wide */
+}
+.cell {
+    width: 60px;
+    height: 60px;
+}
+```
+
+`display: grid` turns a container into a grid. `repeat(3, 60px)` creates 3 equal columns. Child elements flow into the grid automatically left-to-right, top-to-bottom.
+
+### TypeScript Basics
+
+**Variable declarations:**
+```typescript
+const x = value;          // cannot be reassigned (use for DOM elements, fixed values)
+let x: string | null = null;  // can be reassigned (use for game state)
+```
+
+No type before the name like C#. Keyword (`const`/`let`) comes first. Type annotation uses `:` after the name.
+
+**Type annotation syntax:**
+```typescript
+// C#:          string   name = "Yan";
+// TypeScript:  const    name: string = "Yan";
+```
+
+**Arrow functions (lambdas):**
+```typescript
+() => { }                  // no parameters
+(x) => { }                 // one parameter
+async () => { }            // async arrow function
+```
+
+**Non-null assertion (`!`):**
+```typescript
+const el = document.getElementById("btn")!;
+```
+`getElementById` returns `HTMLElement | null`. The `!` tells TypeScript "trust me, this won't be null." Use when you know the element exists in your HTML.
+
+### DOM Manipulation
+
+```typescript
+document.getElementById("id")!          // find element by id
+document.querySelectorAll(".class")      // find all elements with class (never null)
+element.textContent = "text"            // set visible text inside an element
+element.getAttribute("data-index")      // read a data-* attribute (returns string | null)
+element.addEventListener("click", fn)   // listen for a click event
+```
+
+### fetch API
+
+Making HTTP requests from TypeScript — equivalent of calling an API with curl, but in code.
+
+**GET request:**
+```typescript
+const response = await fetch("http://localhost:5077/game/" + id);
+const data = await response.json();
+```
+
+**POST request with JSON body:**
+```typescript
+const response = await fetch("http://localhost:5077/game/move", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ gameId: id, playerChoice: 3 })
+});
+const data = await response.json();
+```
+
+`fetch` returns a Promise (TypeScript's equivalent of `Task<T>`). Always `await` it.
+`response.json()` parses the response body — also a Promise, also `await` it.
+`JSON.stringify()` converts a JS object to a JSON string for the request body.
+
+### CORS — Cross-Origin Resource Sharing
+
+The browser blocks requests to a different origin by default. Your frontend on localhost:3000 calling your API on localhost:5077 is a cross-origin request.
+
+Configure in `Program.cs` (Phase 1 + Phase 3):
+
+```csharp
+// Phase 1 — register the policy
+builder.Services.AddCors(options =>
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
+// Phase 3 — apply it (before MapControllers)
+app.UseCors("AllowFrontend");
+```
+
+`AllowAnyOrigin` is fine for local development. In production, lock it to specific domains.
+
+**Policy name must match exactly** — the string in `AddPolicy` and `UseCors` are case-sensitive.
+
+### TypeScript Compilation
+
+Browsers cannot run TypeScript. `tsc` compiles `.ts` → `.js`.
+
+```
+game.ts   →   tsc   →   game.js
+                          ↑
+                    browser runs this
+```
+
+**tsconfig.json key setting:**
+```json
+"module": "ES2020"
+```
+Set this to target browsers. Default (`commonjs`) generates Node.js-style code with `exports` that browsers cannot read.
+
+**Script tag must use `type="module"`** when using ES2020:
+```html
+<script type="module" src="game.js"></script>
+```
+
+**Workflow:**
+1. Edit `game.ts`
+2. Run `tsc` to recompile
+3. Refresh the browser
+
+### Debugging Frontend — Browser DevTools
+
+`F12` opens the browser developer tools. The **Console** tab shows errors and `console.log()` output — equivalent of your terminal for frontend code.
+
+When the UI doesn't update, always check the Console first. Common errors:
+- `exports is not defined` → wrong `module` setting in tsconfig (set to ES2020)
+- `Failed to fetch` → API server not running, or CORS not configured
+- `file://` security error → open via HTTP server, not directly from the filesystem
